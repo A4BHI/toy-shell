@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -31,38 +32,19 @@ func getCmd(cleanedcmd string) string {
 	return cmd
 }
 
-func searchCmd(path string, cmd string) string {
-	var pathsearch string
-	for _, v := range path {
+func searchCmd(cmd string) {
 
-		pathsearch += string(v)
-
-		if string(v) == ":" || string(v) == "" {
-
-			newpath := strings.Replace(pathsearch, ":", "", 1)
-
-			entries, err := os.ReadDir(newpath)
-			if err != nil {
-				fmt.Println("Error in ReadinDIr", err)
-				return ""
-			}
-			for _, entry := range entries {
-				if !entry.IsDir() {
-					if entry.Name() == cmd {
-						return cmd + " is " + newpath + "/" + cmd
-					}
-				}
-			}
-			pathsearch = ""
-		}
-
+	path, err := exec.LookPath(cmd)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "%s: not found\n", cmd)
+		return
 	}
-	return cmd + ": not found"
+	fmt.Fprintf(os.Stdout, "%s is %s\n", cmd, path)
 }
 
 func main() {
 	// TODO: Uncomment the code below to pass the first stage
-	path := os.Getenv("PATH")
+	// path := os.Getenv("PATH")
 	// fmt.Println(path)
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
@@ -70,7 +52,7 @@ func main() {
 		if err != nil {
 			fmt.Println("Error occured")
 		}
-		cleanedcmd := command[:len(command)-1]
+		cleanedcmd := strings.TrimSpace(command)
 		if command[:len(command)-1] == "exit" {
 			return
 		}
@@ -88,8 +70,7 @@ func main() {
 				fmt.Println(cleanedcmd[len(cmd)+1:] + " is a shell builtin")
 			default:
 				// fmt.Println(cleanedcmd[len(cmd)+1:] + ": not found")
-				searchResult := searchCmd(path, cleanedcmd[len(cmd)+1:])
-				fmt.Println(searchResult)
+				searchCmd(strings.TrimSpace(cleanedcmd[len(cmd)+1:]))
 			}
 
 		} else {
@@ -99,3 +80,4 @@ func main() {
 	}
 
 }
+
